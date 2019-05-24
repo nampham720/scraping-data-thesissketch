@@ -24,7 +24,6 @@ Tfidf, cosine similarity, basic HTML, basic NLTK, mySQL query
 
 #### Author:
 Nam (Nam) Pham |
-nam.pham@edu.turkuamk.fi |
 Turku University of Applied Sciences, Finland
 
 
