@@ -1,4 +1,4 @@
-# thesis_sketchup
+# Thesis Sketch Up
 This project is a backend sketch for my Bachelor thesis.   
 
 The idea is to create a self-built plagiarism check. So far, I can only work with checking similarity between documents. 
@@ -19,5 +19,10 @@ The idea of the project is to:
 
 ### Knowledge required: 
 Tfidf, cosine similarity, basic HTML, basic NLTK, mySQL query
+
+#### Author:
+Nam (Nam) Pham
+nam.pham@edu.turkuamk.fi
+Turku University of Applied Sciences
 
 
