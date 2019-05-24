@@ -1,5 +1,7 @@
 # Thesis Sketch Up
-This project is a backend sketch for my Bachelor thesis.   
+This project is a backend sketch for my Bachelor thesis. 
+
+*There is also my unfinished personal document (as a test with 09 refs so far) for my Organisational Psychology. Please find the essay for **only** reference (because it has not been graded yet). Thank you.* 
 
 The idea is to create a self-built plagiarism check. So far, I can only work with checking similarity between documents. 
 
