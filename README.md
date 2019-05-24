@@ -3,9 +3,9 @@ This project is a backend sketch for my Bachelor thesis.
 
 *There is also my unfinished personal document (as a test with 09 refs so far) for the Organisational Psychology Course. Please find the essay as reference **only** (because it has not been graded yet). Thank you.* 
 
-The idea is to create a self-built plagiarism check. So far, I can only work with checking similarity between documents. 
+The idea is to create a self-built plagiarism check. Up to now, I can only work with checking similarity between documents. 
 
-Some deficiencies of the product is the running time and the copied text detector. Up to now, due to the amount of data, the running time has not been a big problem (less than 10 seconds). 
+One of the deficiencies of the product is the copied text detector. Additionally, running time should also be taken into consideration. However, due to the amount of data, the running time has not been a big problem (less than 10 seconds). 
 
 The idea of the project is to:
 * Open the document
