@@ -7,7 +7,7 @@ The idea is to create a self-built plagiarism check. Up to now, I can only work 
 
 One of the deficiencies of the product is the copied text detector. Additionally, running time should also be taken into consideration. However, due to the amount of data, the running time has not been a big problem (less than 10 seconds). 
 
-The idea of the project is to:
+The agenda of the project is to:
 * Open the document
 * Extract Hyperlinks (references)
 * Store the HyperLinks in the Local Database
