@@ -1,4 +1,4 @@
-# Scraping Data (Thesis Sketchup) 
+# Compare Similarity (Thesis Sketchup) 
 This project is a back-end sketch for my Bachelor thesis. 
 
 *There is also my unfinished personal document (as a test with 09 refs so far) for the Organisational Psychology Course. Please find the essay as reference **only** (because it has not been graded yet). Thank you.* 
