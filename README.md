@@ -5,7 +5,7 @@ This project is a back-end sketch for my Bachelor thesis.
 
 **NOTE**: There are 02 files in this project: one run by using command line, one is Jupyter Notebook. 
 
-Command line argument: ```python main.py --document OrganisationalCourse.docx```
+Command line argument: ```main.py --document OrganisationalCourse.docx```
 
 The idea is to create a self-built plagiarism check. Up to now, I can only work with checking similarity between documents. 
 
