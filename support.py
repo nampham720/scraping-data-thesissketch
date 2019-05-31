@@ -1,161 +1,216 @@
-from docx import Document
-from docx.opc.constants import RELATIONSHIP_TYPE as RT
 import numpy as np
 import PyPDF2
-import urllib
+from docx.opc.constants import RELATIONSHIP_TYPE as RT
+from docx import Document
 import pymysql
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup  
 import requests, io, re
-from nltk.tokenize import word_tokenize
-from nltk.corpus import stopwords
 import string
-from sklearn.feature_extraction.text import TfidfVectorizer
+from nltk.tokenize import word_tokenize, TreebankWordTokenizer
+from nltk.corpus import stopwords, wordnet
+from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
+from nltk.stem import WordNetLemmatizer
+from sklearn.metrics.pairwise import cosine_similarity
+from gensim.models import KeyedVectors, Word2Vec
+from scipy import spatial
 
-
-
-class Similarity:
-    def __init__(self, document):
-        self.document = document
-
-    def checking_similarity(self):
-        '''
-        Checking similarity using cosine similarity
-        Library used:
-        sklearn.feature_extraction.text -> TfidfVectorizer
-        '''
+def readFile(doc):
+    '''
+    Read a text file and return to a elements of a list
+    '''
+    fullText = []
+    for para in doc.paragraphs:
+        fullText.append(para.text)
         
-        def readFile(doc):
-            '''
-            Read a text file and return to elements of a list
-            '''
-            full_text = []
-            for p in doc.paragraphs:
-                full_text.append(p.text)
+    return '\n'.join(fullText)    
 
-            return '\n'.join(full_text)
+def onlRefs(rels):
+    '''
+    Extract all the hyperlinks (references) in the document
+    '''
+    links = []
+    for rel in rels:
+        if rels[rel].reltype == RT.HYPERLINK:
+            links.append(rels[rel]._target)
+            
+    return links
 
-        def onl_refs(rels):
-            '''
-            Extract all the hyperlinks (refs) in the document
-            '''
-            links = []
-            for rel in rels:
-                if rels[rel].reltype == RT.HYPERLINK:
-                    links.append(rels[rel]._target)
-                
-            return links
-
-        def working_with_mysql(onl_ref_results):
-            '''
-            Store all the hyperlinks to db
-            library used: pymysql
-            '''
-            #open db
-            db = pymysql.connect(host='127.0.0.1',
-                                user='root',
-                                db='references')
-
-            #create cursor
-            cursor = db.cursor()
-
-            #insert/check distinct refs to add to the db
-            sql = "INSERT INTO onlref (link) VALUES (%s)"
-            for link in onl_ref_results:
-                try:
-                    cursor.execute(sql, link)
-                except:
-                    pass
-
-            #pull all the links
-            cursor.execute('SELECT link FROM onlref')
-            data = cursor.fetchall()
-
-            #commit and close db
-            db.commit()
-            db.close()
-
-            #add link into a list
-            links = []
-            for link in data:
-                links.append(link[0])
-            return links
-
-        def read_content(link):
-            '''
-            Depend on the website (pdf or regular html)
-            Open the link and scrape the data of 01 site
-            Libraries used:
-            bs4 -> BeautifulSoup
-            request, io, re
-            '''
-            string = []
-            #if the link is a pdf
-            if (re.search(link.split('/')[-1], r'.pdf') is True):
-                response = requests.get(link)
-                raw_data = response.content
-                pdf_content = io.BytesIO(raw_data)
-                pdf_reader = PyPDF2.PdfFileReader(pdf_content)
-                for page in range(pdf_reader.numPages + 1):
-                    string.append(pdf_reader.getPage(page).extractText())
-
-                return (' '.join(string))
-            else:
-                #function to scrape data
-                def scrape_data():
-                    page = requests.get(link)
-                    text = BeautifulSoup(page.text, 'html.parser').find_all('p')
-                    for p in text:
-                        string.append(p.get_text())
-                    return(' '.join(string).replace(u'\xa0', ' ').replace(u'\n', ' '))
-                
-                #start scraping
-                try:
-                    return scrape_data()
-                
-                #some links need authentication
-                except:
-                    
-                    headers = {'User-Agent':'Mozilla/5.0'}             
-                    #class AppURLopener(urllib.request.FancyURLopener):
-                        #version = "Mozilla/5.0"
-                    #opener = AppURLopener()
-                    return scrape_data()
-
-        def get_all_content(links):
-            '''
-            Return all the contents into a list 
-            '''
-            base_refs = []
-            for link in links:
-                base_refs.append(read_content(link))
-            return base_refs
-
-        def get_token(text):
-            '''
-            Tokenize + Omit punctuation
-            Libraries:
-                nltk.tokenize -> word_tokenize
-                nltk.corpus -> stopwords,
-                string
-            '''
-            translator = str.maketrans('', '', string.punctuation)
-            stop_words = set(stopwords.words('english'))
-            tokens = word_tokenize(text)
-            tokens = [token.lower() for token in tokens]
-            filtered = [w for w in tokens if not w in stop_words]
-            return ' '.join(filtered).translate(translator)
-
-        doc = Document(self.document)
-        rels = doc.part.rels
-        vect = TfidfVectorizer(min_df=1)
-        similarity = []
-        links = working_with_mysql(onl_refs(rels))
-
-        for content in get_all_content(links):
-            tfidf = vect.fit_transform([get_token(readFile(doc)), content])
-            similarity.append((tfidf * tfidf.T).A[0,1])
-        
-        return np.mean(similarity)
-
+def readContent(link):    
+    '''
+    Depend on the website (pdf or regular html)
+    Open the file and scrape the data of 01 site
+    Libraries used: 
+    bs4 -> BeautifulSoup 
+    requests, io, re
+    '''
     
+    string = []
+   
+    # if the link is a pdf
+    if (r'.pdf' in link.split('/')[-1]):
+        title = link.split('/')[-1]
+        response = requests.get(link)
+        raw_data = response.content
+        pdf_content = io.BytesIO(raw_data)
+        pdf_reader = PyPDF2.PdfFileReader(pdf_content)
+        for page in range(pdf_reader.numPages):
+            string.append(pdf_reader.getPage(page).extractText())
+        return link, title, (' '.join(string))
+    
+    # if not
+    else:
+        def scrape_data():
+            '''
+            Return title + content of a webpage 
+            '''
+            page = requests.get(link)
+            title = BeautifulSoup(page.text, 'html.parser').head.title.contents
+            text = BeautifulSoup(page.text, 'html.parser').find_all('p')
+            for p in text:
+                string.append(p.get_text())
+            return link, title, (' '.join(string).replace(u'\xa0', ' ').replace(u'\n', ' '))
         
+        try:
+            return scrape_data()
+        
+        #some links need authentication
+        except:
+            
+            headers = {'User-Agent':'Mozilla/5.0'}             
+            #class AppURLopener(urllib.request.FancyURLopener):
+                #version = "Mozilla/5.0"
+            #opener = AppURLopener()
+            return scrape_data()
+
+def working_with_mySQL(readContent_result):
+    '''
+    Store (link, title, content) scraped from 01 website to local db
+    Return content
+    Library used: pymysql
+    '''
+    #Open database
+    db = pymysql.connect(host = '127.0.0.1',
+                          user = 'root',
+                           db = 'references')
+    
+    cursor = db.cursor()   
+    
+    #check distinct reference to add to the database
+    sql = "INSERT INTO onlref (link, title, content) VALUES (%s, %s, %s)"
+
+    try:
+        cursor.execute(sql, readContent_result)
+    except:
+        pass
+
+    #fetch data
+    link, title, content = readContent_result
+    cursor.execute('SELECT content FROM onlref WHERE onlref.link = %s', link)
+    data = cursor.fetchone()
+
+    db.commit()
+    db.close()
+        
+    return str(data[0])
+
+def getToken(text):
+    '''
+    Tokenise + Omit punctuation
+    Libraries: 
+        nltk.tokenize -> word_tokenize, 
+        nltk.corpus -> stopwords,
+        string
+    '''
+    translator = str.maketrans('', '', string.punctuation)
+    stopWords = set(stopwords.words('english'))
+    tokens = word_tokenize(text)
+    tokens = [token.lower() for token in tokens]
+    filtered = [w for w in tokens if not w in stopWords]
+    
+    return ' '.join(filtered).translate(translator).split()
+
+def lemmatize_append(set_tokens):
+    lmt = WordNetLemmatizer()
+    lemmatize_set = []
+    for wd in set_tokens:
+        lemmatize_set.append(lmt.lemmatize(wd))
+    return set(lemmatize_set)
+
+class Methods(object):
+    def __init__(self, doc):
+        self.doc = doc
+        
+    def jaccard_similarity(self):
+        '''
+        Checking similarity using Jaccard Similarity
+        '''
+        
+        document = Document(self.doc)
+        rels = document.part.rels
+        tokens_a = set(getToken(readFile(document)))
+        features = []
+        percentage = []
+        
+        def jaccard(a, b, j):
+            return float(len(j)/(len(a) + len(b) - len(j)))
+
+        features.append(lemmatize_append(tokens_a))
+
+        for link in onlRefs(rels):
+            features.append(lemmatize_append(getToken(working_with_mySQL(readContent(link)))))
+            
+        while len(features) > 2:
+            i = len(features) - 1
+            features[1] = features[1].union(features[i])
+            features.pop(i)
+            
+        jac = features[0].intersection(features[1])
+
+        return jaccard(features[0], features[1], jac)*100
+    
+    def cosine_sim(self):
+        '''
+        Perform Cosine Similarity
+        '''
+
+        tokenizer = TreebankWordTokenizer()
+        vect = CountVectorizer()
+        vect.set_params(tokenizer=tokenizer.tokenize, stop_words='english')
+        document = Document(self.doc)
+        rels = document.part.rels
+        
+        corpus = []
+        corpus.append(readFile(document))
+
+        for link in onlRefs(rels):
+            corpus.append(working_with_mySQL(readContent(link)))
+
+        tfidf = vect.fit_transform(corpus)
+        return (1 - cosine_similarity(tfidf)[0][1])*100
+    
+    def word_to_vec(self):
+        '''
+        Comparing the contextual similarity between documents.
+        Converting tokens to numeric vector using Google pretrained document.
+        Perform cosine similarity based on that.
+        '''
+        
+        #take only first 100k most frequent tokens
+        model = KeyedVectors.load_word2vec_format('GoogleNews-vectors-negative300.bin', binary=True, limit = 100000)
+        
+        document = Document(self.doc)
+        rels = document.part.rels
+        result = []
+        
+        def convert(corpora):
+            return np.mean([model[wd] for wd in getToken(corpora) if wd in model], axis=0)
+            
+        base_corpora = convert(readFile(document))
+        for link in onlRefs(rels):
+            cal = 1 - spatial.distance.cosine(
+                base_corpora, 
+                convert(working_with_mySQL(readContent(link))))
+            
+            result.append(cal)
+            
+        return np.mean(result)*100

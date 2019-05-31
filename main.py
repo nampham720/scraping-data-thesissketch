@@ -9,8 +9,11 @@ def Main():
     parser.add_argument('--document', help='Type your .docx name here', type=argparse.FileType('r'))
     args = parser.parse_args()
 
-    check = Similarity(str(sys.argv[2]))
-    print("The similarity of your text compared to your refs is: " ,check.checking_similarity())
+    method = Methods(sys.argv[2])
+    print("Similarity check by using:")
+    print("Jaccard Similarity: %.4f\n\
+Cosine Similarity:%.4f\n\
+Word to vector: %.4f" % (method.jaccard_similarity(), method.cosine_sim, method.word_to_vec))
 
 if __name__ == '__main__':
     Main()
