@@ -1,6 +1,8 @@
 # Compare Similarity (Thesis Sketchup) 
 This project is a back-end sketch for my Bachelor thesis. 
 
+**Code has been optimized**
+
 *There is also my unfinished personal document (as a test with 09 refs so far) for the Organisational Psychology Course. Please find the essay as reference **only** (because it has not been graded yet). Thank you.* 
 
 **NOTE**: There are 02 files in this project: one run by using command line, one is Jupyter Notebook. 
@@ -9,7 +11,7 @@ Cmd argument: ```main.py --document OrganisationalCourse.docx```
 
 
 **Future**:
-* Polarity and speech spentiment
+* Polarity and speech sentiment
 * Improve the speed with big data
 * Return copied text
 * Statistical test (homogeneity test)
